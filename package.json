@@ -20,7 +20,12 @@
   },
   "homepage": "https://github.com/HalaHabboub/Mazaj-Backend#readme",
   "dependencies": {
+    "@langchain/core": "^1.1.13",
+    "@langchain/langgraph": "^1.0.15",
+    "@langchain/openai": "^1.2.2",
+    "langchain": "^1.2.8",
     "morgan": "^1.10.1",
+    "openai": "^6.16.0",
     "pg": "^8.16.3"
   }
 }
