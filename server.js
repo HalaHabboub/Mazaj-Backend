@@ -17,7 +17,7 @@ import morgan from 'morgan';
 import pgclient from './db.js';
 
 // Import routes (uncomment when I create them)
-// import partyRoutes from './routes/partyRoutes.js';
+import partyRoutes from './routes/partyRoutes.js';
 // import chatRoutes from './routes/chatRoutes.js';
 
 
@@ -54,7 +54,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes (uncomment when created)
-// app.use('/api/party', partyRoutes);
+app.use('/api/party', partyRoutes);
 // app.use('/api/chat', chatRoutes);
 
 
