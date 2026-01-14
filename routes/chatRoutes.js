@@ -82,8 +82,14 @@ router.post('/send', async (req, res) => {
             await pgclient.query(
                 `INSERT INTO "Song" (id, title, artist, "coverUrl", "youtubeId", "addedBy", status, "partyId", "createdAt")
                    VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'PENDING', $6, NOW())`,
-                [aiResponse.song.title, aiResponse.song.artist, aiResponse.song.coverUrl || null,
-                aiResponse.song.youtubeId || null, senderId, partyId]
+                [
+                    aiResponse.song.title,
+                    aiResponse.song.artist,
+                    aiResponse.song.coverUrl || null,
+                    aiResponse.song.youtubeId || null,
+                    senderId,
+                    partyId
+                ]
             );
         }
 
