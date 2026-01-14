@@ -121,4 +121,124 @@ router.get('/code/:code', async (req, res) => {
 });
 
 
+//QUEUE MANAGEMENT
+
+// ============================================================================
+// GET /api/party/:id/queue - Get party's song queue
+// ============================================================================
+router.get('/:id/queue', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Get all songs for this party, ordered by creation time
+        const result = await pgclient.query(
+            `SELECT * FROM "Song"
+               WHERE "partyId" = $1
+               ORDER BY "createdAt" ASC`,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            queue: result.rows
+        });
+
+    } catch (err) {
+        console.error('Error getting queue:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get queue'
+        });
+    }
+});
+
+
+// ============================================================================
+// POST /api/party/:id/queue - Add song to queue (manual add, not AI)
+// ============================================================================
+router.post('/:id/queue', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, artist, coverUrl, youtubeId, addedBy } = req.body;
+
+        // Validation
+        if (!title || !artist || !addedBy) {
+            return res.status(400).json({
+                success: false,
+                message: 'title, artist, and addedBy are required'
+            });
+        }
+
+        // Insert song into queue
+        const result = await pgclient.query(
+            `INSERT INTO "Song" (id, title, artist, "coverUrl", "youtubeId", "addedBy", status, "partyId", "createdAt")
+               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'PENDING', $6, NOW())
+               RETURNING *`,
+            [title, artist, coverUrl || null, youtubeId || null, addedBy, id]
+        );
+
+        res.status(201).json({
+            success: true,
+            song: result.rows[0],
+            message: 'Song added to queue'
+        });
+
+    } catch (err) {
+        console.error('Error adding to queue:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to add song to queue'
+        });
+    }
+});
+
+
+// ============================================================================
+// PATCH /api/party/:id/queue/:songId - Update song status (PLAYING, PLAYED)
+// ============================================================================
+router.patch('/:id/queue/:songId', async (req, res) => {
+    try {
+        const { id, songId } = req.params;
+        const { status } = req.body;
+
+        // Validate status
+        const validStatuses = ['PENDING', 'PLAYING', 'PLAYED'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be PENDING, PLAYING, or PLAYED'
+            });
+        }
+
+        // Update song status
+        const result = await pgclient.query(
+            `UPDATE "Song"
+               SET status = $1
+               WHERE id = $2 AND "partyId" = $3
+               RETURNING *`,
+            [status, songId, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Song not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            song: result.rows[0]
+        });
+
+    } catch (err) {
+        console.error('Error updating song:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update song'
+        });
+    }
+});
+
+
 export default router;
