@@ -153,10 +153,59 @@ export function checkVibeMatch(song, vibeRules) {
     return { matches: true, reason: 'Song matches the vibe!' };
 }
 
+/**
+  * Add a newly discovered song to the catalog with embedding
+  */
+export async function addSongToCatalog(song, analysis) {
+    try {
+        console.log(` Adding "${song.title}" by ${song.artist} to catalog...`);
+
+        // Generate embedding for the song
+        const textToEmbed = `${song.title} ${song.artist} ${analysis.mood?.join(' ')} ${analysis.genre}`;
+
+        const embeddingResponse = await openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: textToEmbed,
+        });
+        const embedding = embeddingResponse.data[0].embedding;
+        const embeddingString = `[${embedding.join(',')}]`;
+
+        // Insert into SongCatalog
+        const result = await pgclient.query(
+            `INSERT INTO "SongCatalog"
+               (id, title, artist, year, "youtubeId", "coverUrl", mood, genre, embedding, "createdAt")
+               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8::vector, NOW())
+               ON CONFLICT DO NOTHING
+               RETURNING *`,
+            [
+                song.title,
+                song.artist,
+                song.year || null,
+                song.youtubeId || null,
+                song.coverUrl || null,
+                analysis.mood || [],
+                analysis.genre || null,
+                embeddingString
+            ]
+        );
+
+        if (result.rows.length > 0) {
+            console.log(`✅ Song added to catalog with embedding`);
+            return result.rows[0];
+        }
+        return null;
+
+    } catch (error) {
+        console.error('❌ Error adding song to catalog:', error.message);
+        return null;
+    }
+}
+
 export default {
     searchSongsByText,
     findExactSong,
     searchSongsBySemantic,
     getSongsByMood,
-    checkVibeMatch
+    checkVibeMatch,
+    addSongToCatalog
 };
