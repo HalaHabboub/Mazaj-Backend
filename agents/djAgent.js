@@ -1,18 +1,28 @@
 /**
-   * DJ Agent - AI-powered music curator
-   * Uses LangChain with OpenRouter (Gemini) to validate song requests
-   */
+  * DJ Agent - AI-powered music curator
+  * Uses LangChain with OpenRouter (Gemini) to validate song requests
+  */
 
 import { ChatOpenAI } from '@langchain/openai';
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Debug
+console.log(' OpenRouter API Key loaded:', process.env.OPENROUTER_API_KEY ? 'YES' : 'NO');
+console.log(' Model:', process.env.OPENROUTER_MODEL);
 
 // Create the LLM using OpenRouter
 const llm = new ChatOpenAI({
     modelName: process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-001',
-    openAIApiKey: process.env.OPENROUTER_API_KEY,
-    configuration: {
-        baseURL: 'https://openrouter.ai/api/v1',
-    },
     temperature: 0.7,
+    configuration: {
+        apiKey: process.env.OPENROUTER_API_KEY,
+        baseURL: 'https://openrouter.ai/api/v1',
+        defaultHeaders: {
+            'HTTP-Referer': 'http://localhost:3000',
+            'X-Title': 'Mazaj AI DJ',
+        },
+    },
 });
 
 
@@ -21,6 +31,8 @@ const llm = new ChatOpenAI({
  */
 export async function invokeDJAgent({ userMessage, vibeDescription, vibeRules, chatHistory, partyId }) {
     try {
+        console.log(' DJ Agent called with:', userMessage);
+
         // Build the system prompt
         const systemPrompt = `You are Mazaj, the AI DJ for this party. Your job is to evaluate song requests and keep the vibe right.
 
@@ -65,6 +77,8 @@ export async function invokeDJAgent({ userMessage, vibeDescription, vibeRules, c
             { role: 'user', content: userPrompt }
         ]);
 
+        console.log(' LLM Response:', response.content);
+
         // Parse the response
         const responseText = response.content;
 
@@ -86,7 +100,8 @@ export async function invokeDJAgent({ userMessage, vibeDescription, vibeRules, c
         }
 
     } catch (error) {
-        console.error('DJ Agent error:', error);
+        console.error('❌ DJ Agent error:', error.message);
+        console.error('❌ Full error:', error);
         return {
             message: "Sorry, I'm having trouble processing that. Try again!",
             type: 'CHAT',
