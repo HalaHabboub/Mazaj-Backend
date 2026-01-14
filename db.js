@@ -7,22 +7,15 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// ============================================================================
-// CREATE POSTGRESQL CLIENT
-// ============================================================================
-
 /**
  * Create a new PostgreSQL client instance
  */
-export const pgclient = new pg.Client({
-    connectionString: process.env.DATABASE_URL,
 
+const pgclient = new pg.Client({
+    connectionString: process.env.DATABASE_URL,
 });
 
 
-// ============================================================================
-// CONNECTION ERROR HANDLING
-// ============================================================================
 
 /**
  * Handle connection errors

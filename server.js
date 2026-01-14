@@ -14,8 +14,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 
-
-import { pgclient } from './db.js';
+import pgclient from './db.js';
 
 // Import routes (uncomment when I create them)
 // import partyRoutes from './routes/partyRoutes.js';

@@ -1,0 +1,26 @@
+{
+  "name": "mazaj-backend",
+  "version": "1.0.0",
+  "description": "readme",
+  "main": "db.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HalaHabboub/Mazaj-Backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HalaHabboub/Mazaj-Backend/issues"
+  },
+  "homepage": "https://github.com/HalaHabboub/Mazaj-Backend#readme",
+  "dependencies": {
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3"
+  }
+}
