@@ -7,6 +7,7 @@
 
 import express from 'express';
 import pgclient from '../db.js';
+import { extractVibeRules } from '../services/vibeExtractor.js';
 
 const router = express.Router();
 
@@ -60,15 +61,19 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // Generate a random party code (e.g., "MZ-8821")
+        // Generate party code
         const code = 'MZ-' + Math.random().toString(36).substring(2, 6).toUpperCase();
 
-        // Insert into database
+        // 🆕 Extract structured vibe rules from description using AI
+        console.log(' Extracting vibe rules from:', vibeDescription);
+        const vibeRules = await extractVibeRules(vibeDescription);
+
+        // Insert into database with vibe rules
         const result = await pgclient.query(
-            `INSERT INTO "Party" (id, code, "hostId", "vibeDescription", "isActive", "createdAt", "updatedAt")
-               VALUES (gen_random_uuid(), $1, $2, $3, true, NOW(), NOW())
+            `INSERT INTO "Party" (id, code, "hostId", "vibeDescription", "vibeRules", "isActive", "createdAt", "updatedAt")
+               VALUES (gen_random_uuid(), $1, $2, $3, $4, true, NOW(), NOW())
                RETURNING *`,
-            [code, hostId, vibeDescription]
+            [code, hostId, vibeDescription, JSON.stringify(vibeRules)]
         );
 
         res.status(201).json({
@@ -85,7 +90,6 @@ router.post('/', async (req, res) => {
         });
     }
 });
-
 
 // ============================================================================
 // GET /api/party/code/:code - Get party by code (for joining)
