@@ -18,6 +18,7 @@ import pgclient from './db.js';
 
 import partyRoutes from './routes/partyRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 
 // ============================================================================
@@ -47,14 +48,15 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
-        message: '🎵 Mazaj AI DJ Party Backend is running!',
+        message: ' Mazaj AI DJ Party Backend is running!',
         timestamp: new Date().toISOString()
     });
 });
 
-// API Routes (uncomment when created)
+// API Routes 
 app.use('/api/party', partyRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/auth', authRoutes);
 
 
 // ============================================================================
@@ -86,19 +88,19 @@ app.use((err, req, res, next) => {
 
 pgclient.connect()
     .then(() => {
-        console.log('✅ Connected to PostgreSQL database');
+        console.log(' Connected to PostgreSQL database');
 
         app.listen(PORT, () => {
             console.log('\n🎵 ═══════════════════════════════════════');
             console.log('   MAZAJ AI DJ PARTY BACKEND');
             console.log('   ═══════════════════════════════════════');
-            console.log(`   🚀 Server: http://localhost:${PORT}`);
-            console.log(`   📡 Health: http://localhost:${PORT}/health`);
+            console.log(`    Server: http://localhost:${PORT}`);
+            console.log(`    Health: http://localhost:${PORT}/health`);
             console.log('   ═══════════════════════════════════════\n');
         });
     })
     .catch((err) => {
-        console.error('❌ Database connection failed:', err);
+        console.error(' Database connection failed:', err);
         process.exit(1);
     });
 
@@ -108,7 +110,7 @@ pgclient.connect()
 // ============================================================================
 
 process.on('SIGINT', async () => {
-    console.log('\n🛑 Shutting down...');
+    console.log('\n Shutting down...');
     await pgclient.end();
     process.exit(0);
 });
