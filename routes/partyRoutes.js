@@ -11,6 +11,33 @@ import { extractVibeRules } from '../services/vibeExtractor.js';
 
 const router = express.Router();
 
+// ============================================================================
+// GET /api/party/user/:userId - Get all parties for a user
+// ============================================================================
+router.get('/user/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const result = await pgclient.query(
+            `SELECT * FROM "Party"
+               WHERE "hostId" = $1
+               ORDER BY "createdAt" DESC`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            parties: result.rows
+        });
+
+    } catch (err) {
+        console.error('Error fetching user parties:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch parties'
+        });
+    }
+});
 
 // ============================================================================
 // GET /api/party/:id - Get party by ID
