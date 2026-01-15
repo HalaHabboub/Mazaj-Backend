@@ -126,14 +126,15 @@ router.get('/:partyId/history', async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
 
         const result = await pgclient.query(
-            `SELECT * FROM "ChatMessage"
-               WHERE "partyId" = $1
-               ORDER BY "createdAt" ASC
+            `SELECT cm.*, u.name as "senderName", u."avatarUrl" as "senderAvatar"
+               FROM "ChatMessage" cm
+               LEFT JOIN "User" u ON cm."senderId" = u.id
+               WHERE cm."partyId" = $1
+               ORDER BY cm."createdAt" ASC
                LIMIT $2 OFFSET $3`,
             [partyId, limit, offset]
         );
 
-        // Get total count
         const countResult = await pgclient.query(
             'SELECT COUNT(*) FROM "ChatMessage" WHERE "partyId" = $1',
             [partyId]
@@ -157,6 +158,5 @@ router.get('/:partyId/history', async (req, res) => {
         });
     }
 });
-
 
 export default router;

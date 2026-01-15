@@ -103,6 +103,13 @@ router.post('/', async (req, res) => {
             [code, hostId, vibeDescription, JSON.stringify(vibeRules)]
         );
 
+
+        // Auto-add host as party member
+        await pgclient.query(
+            'INSERT INTO "PartyMember" ("partyId", "userId") VALUES ($1, $2)',
+            [result.rows[0].id, hostId]
+        );
+
         res.status(201).json({
             success: true,
             party: result.rows[0],
@@ -271,5 +278,151 @@ router.patch('/:id/queue/:songId', async (req, res) => {
     }
 });
 
+
+// ============================================================================
+// POST /api/party/:id/join - Join a party
+// ============================================================================
+
+router.post('/:id/join', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        // Check if party exists
+        const partyResult = await pgclient.query(
+            'SELECT * FROM "Party" WHERE id = $1',
+            [id]
+        );
+
+        if (partyResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Party not found'
+            });
+        }
+
+        // Check if already joined
+        const existingMember = await pgclient.query(
+            'SELECT * FROM "PartyMember" WHERE "partyId" = $1 AND "userId" = $2',
+            [id, userId]
+        );
+
+        if (existingMember.rows.length > 0) {
+            // Already a member, just return success
+            return res.json({
+                success: true,
+                message: 'Already a member',
+                party: partyResult.rows[0]
+            });
+        }
+
+        // Add user to party
+        await pgclient.query(
+            'INSERT INTO "PartyMember" ("partyId", "userId") VALUES ($1, $2)',
+            [id, userId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Joined party successfully',
+            party: partyResult.rows[0]
+        });
+
+    } catch (err) {
+        console.error('Error joining party:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to join party'
+        });
+    }
+});
+
+// ============================================================================
+// GET /api/party/:id/members - Get all party members
+// ============================================================================
+
+router.get('/:id/members', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await pgclient.query(
+            `SELECT u.id, u.name, u.email, u."avatarUrl", pm."joinedAt"
+               FROM "PartyMember" pm
+               JOIN "User" u ON pm."userId" = u.id
+               WHERE pm."partyId" = $1
+               ORDER BY pm."joinedAt" ASC`,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            members: result.rows
+        });
+
+    } catch (err) {
+        console.error('Error fetching members:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch members'
+        });
+    }
+});
+
+
+// ============================================================================
+// DELETE /api/party/:id - Delete a party and all related data
+// ============================================================================
+
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        // Verify the user is the host
+        const partyResult = await pgclient.query(
+            'SELECT * FROM "Party" WHERE id = $1',
+            [id]
+        );
+
+        if (partyResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Party not found'
+            });
+        }
+
+        if (partyResult.rows[0].hostId !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the host can delete this party'
+            });
+        }
+
+        // Delete in order (due to foreign keys):
+        // 1. ChatMessages
+        await pgclient.query('DELETE FROM "ChatMessage" WHERE "partyId" = $1', [id]);
+
+        // 2. Songs
+        await pgclient.query('DELETE FROM "Song" WHERE "partyId" = $1', [id]);
+
+        // 3. PartyMembers
+        await pgclient.query('DELETE FROM "PartyMember" WHERE "partyId" = $1', [id]);
+
+        // 4. Party itself
+        await pgclient.query('DELETE FROM "Party" WHERE id = $1', [id]);
+
+        res.json({
+            success: true,
+            message: 'Party deleted successfully'
+        });
+
+    } catch (err) {
+        console.error('Error deleting party:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete party'
+        });
+    }
+});
 
 export default router;
