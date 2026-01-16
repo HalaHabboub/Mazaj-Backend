@@ -12,22 +12,41 @@ import { extractVibeRules } from '../services/vibeExtractor.js';
 const router = express.Router();
 
 // ============================================================================
-// GET /api/party/user/:userId - Get all parties for a user
+// GET /api/party/user/:userId - Get all parties for a user (with members)
 // ============================================================================
 router.get('/user/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const result = await pgclient.query(
+        // Get all parties hosted by user
+        const partiesResult = await pgclient.query(
             `SELECT * FROM "Party"
                WHERE "hostId" = $1
                ORDER BY "createdAt" DESC`,
             [userId]
         );
 
+        // For each party, get members with their avatars
+        const partiesWithMembers = await Promise.all(
+            partiesResult.rows.map(async (party) => {
+                const membersResult = await pgclient.query(
+                    `SELECT u.id, u.name, u."avatarUrl", u.email
+                       FROM "PartyMember" pm
+                       JOIN "User" u ON pm."userId" = u.id
+                       WHERE pm."partyId" = $1
+                       ORDER BY pm."joinedAt" ASC`,
+                    [party.id]
+                );
+                return {
+                    ...party,
+                    members: membersResult.rows
+                };
+            })
+        );
+
         res.json({
             success: true,
-            parties: result.rows
+            parties: partiesWithMembers
         });
 
     } catch (err) {
